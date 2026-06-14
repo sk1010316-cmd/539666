@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>539 量化追蹤台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1014;--panel:#14181f;--panel-2:#171c24;--line:#232a34;--line-soft:#1c222b;
+    --txt:#e7ebf1;--txt-mute:#7a8698;--txt-dim:#525d6c;--gold:#e8b84b;--gold-soft:#3a2f12;
+    --hot:#d8842c;--cold:#3f7fa8;--hit:#46b06a;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --cjk:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(900px 500px at 85% -10%, #161d27 0%, transparent 60%),var(--bg);
+    color:var(--txt);font-family:var(--cjk);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:18px;min-height:100vh}
+  .num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:4px 2px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .brand h1{font-family:var(--mono);font-weight:800;font-size:24px;letter-spacing:-.5px;margin:0}
+  .brand h1 .accent{color:var(--gold)}
+  .badge-src{font-family:var(--mono);font-size:11px;color:var(--txt-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+  .badge-src b{color:var(--hit)}
+  .kpis{display:flex;gap:26px;flex-wrap:wrap}
+  .kpi{text-align:right}
+  .kpi .v{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1}
+  .kpi .v.warn{color:var(--gold)}
+  .kpi .l{font-size:11px;color:var(--txt-dim);margin-top:5px;letter-spacing:.04em}
+  .grid{display:grid;gap:14px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .cols-rec{grid-template-columns:1.4fr 1fr}
+  @media (max-width:780px){.cols-2,.cols-rec{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h2{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-mute);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .rec-balls{display:flex;gap:12px;margin:6px 0 16px}
+  .ball-big{width:74px;height:74px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#1d2129,#11151b);border:1px solid var(--line)}
+  .ball-big.on{background:linear-gradient(160deg,#3a2f12,#211a09);border-color:var(--gold);box-shadow:0 6px 22px -8px rgba(232,184,75,.5)}
+  .ball-big .n{font-family:var(--mono);font-size:30px;font-weight:800;color:var(--txt-dim)}
+  .ball-big.on .n{color:var(--gold)}
+  .ball-big .lab{font-size:10px;color:var(--txt-dim);margin-top:3px}
+  .ball-big.on .lab{color:#b89243}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  select,input,button{font-family:inherit;font-size:13px}
+  select,input{background:var(--panel-2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;outline:none}
+  input.numbox{width:48px;text-align:center;font-family:var(--mono);padding:8px 4px}
+  input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  input[type=date]{color-scheme:dark}
+  button{background:var(--panel-2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 14px;cursor:pointer;transition:.12s;font-weight:500}
+  button:hover{border-color:var(--txt-mute);background:#1d232c}
+  button.primary{background:var(--gold);color:#1a1407;border-color:var(--gold);font-weight:700}
+  button.primary:hover{background:#f0c75e}
+  button.ghost{background:transparent}
+  button.danger:hover{border-color:#a4453a;color:#e0796d}
+  .sub{font-size:12px;color:var(--txt-mute)} .sub b{color:var(--txt)}
+  .base-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line-soft)}
+  .base-row:last-child{border-bottom:0}
+  .base-row .k{color:var(--txt-mute);font-size:12.5px}
+  .base-row .val{font-family:var(--mono);font-weight:700}
+  .delta-up{color:var(--hit)} .delta-down{color:#c76b5f} .delta-flat{color:var(--txt-mute)}
+  .matrix-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:6px 12px;font-size:12px;background:transparent;color:var(--txt-mute)}
+  .seg button.act{background:var(--panel-2);color:var(--txt)}
+  .matrix{display:grid;grid-template-columns:repeat(8,1fr);gap:7px}
+  @media (max-width:620px){.matrix{grid-template-columns:repeat(5,1fr)}}
+  .cell{border-radius:9px;padding:8px 4px 6px;text-align:center;border:1px solid var(--line-soft);position:relative;background:var(--panel-2);transition:.12s}
+  .cell .cn{font-family:var(--mono);font-size:18px;font-weight:700}
+  .cell .cs{font-family:var(--mono);font-size:10px;color:var(--txt-dim);margin-top:2px}
+  .cell.rec{outline:2px solid var(--gold);outline-offset:-1px}
+  .cell.rec .rec-tag{position:absolute;top:-7px;right:-5px;background:var(--gold);color:#1a1407;font-size:9px;font-family:var(--mono);font-weight:800;border-radius:4px;padding:1px 4px}
+  .legend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--txt-dim);margin-top:12px;flex-wrap:wrap}
+  .legend .bar{height:8px;width:120px;border-radius:4px;background:linear-gradient(90deg,#2f5d7a,#39414f,#c8852b)}
+  .inrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+  .inrow .nums{display:flex;gap:6px}
+  .hint{font-size:11.5px;color:var(--txt-dim);margin-top:8px}
+  .list{max-height:340px;overflow:auto;margin:-4px -4px 0;padding:0 4px}
+  .list::-webkit-scrollbar{width:8px}.list::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  .drow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line-soft)}
+  .drow:hover{background:var(--panel-2)}
+  .drow .date{font-family:var(--mono);font-size:12px;color:var(--txt-mute);width:84px;flex:none}
+  .drow .balls{display:flex;gap:5px;flex:1;flex-wrap:wrap}
+  .mini{font-family:var(--mono);font-size:12px;font-weight:600;background:#1b212a;border:1px solid var(--line);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+  .mini.hit{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+  .tagm{font-size:10px;color:var(--txt-dim);border:1px solid var(--line);border-radius:4px;padding:1px 5px;flex:none}
+  .x{color:var(--txt-dim);cursor:pointer;font-size:16px;padding:0 4px;line-height:1}.x:hover{color:#e0796d}
+  .rrow{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line-soft)}
+  .rrow .meth{font-size:12px;width:90px;flex:none;color:var(--txt-mute)}
+  .rrow .picks{display:flex;gap:5px;flex:1}
+  .badge{font-family:var(--mono);font-size:11px;font-weight:700;border-radius:5px;padding:3px 8px;flex:none}
+  .badge.pend{background:#1b212a;color:var(--txt-dim);border:1px solid var(--line)}
+  .badge.h0{background:#2a1d1b;color:#c76b5f;border:1px solid #4a2d28}
+  .badge.h1{background:var(--gold-soft);color:var(--gold);border:1px solid #5a4718}
+  .badge.h2{background:#16321f;color:var(--hit);border:1px solid #285238}
+  /* leaderboard */
+  .lbrow{display:flex;align-items:center;gap:8px;padding:9px 8px;border-bottom:1px solid var(--line-soft);font-size:13px;border-radius:6px}
+  .lbrow.best{background:linear-gradient(90deg,transparent,var(--gold-soft))}
+  .lbrow.theory{color:var(--txt-mute);border-top:1px dashed var(--line);border-bottom:0}
+  .lbrow .m{flex:1;min-width:0}
+  .lbrow .st{font-family:var(--mono);width:78px;text-align:right;flex:none}
+  .lbrow .st.hi{color:var(--gold)}
+  .lbhdr{display:flex;gap:8px;padding:0 8px 6px;font-size:10.5px;color:var(--txt-dim);letter-spacing:.06em}
+  .lbhdr .m{flex:1} .lbhdr .st{width:78px;text-align:right;flex:none}
+  /* bars */
+  .barrow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+  .barrow .lab{width:96px;color:var(--txt-mute);flex:none;font-family:var(--mono)}
+  .barrow .track{flex:1;height:14px;background:var(--panel-2);border-radius:4px;overflow:hidden;border:1px solid var(--line-soft)}
+  .barrow .fill{height:100%;background:linear-gradient(90deg,#3f7fa8,#e8b84b)}
+  .barrow .val{width:62px;text-align:right;font-family:var(--mono);color:var(--txt-dim);flex:none}
+  .blk-title{font-size:11px;color:var(--txt-dim);margin:14px 0 6px;letter-spacing:.06em}
+  .blk-title:first-child{margin-top:0}
+  .empty{color:var(--txt-dim);font-size:13px;text-align:center;padding:26px 8px;line-height:1.7}
+  .footer{font-size:11px;color:var(--txt-dim);text-align:center;margin-top:22px;line-height:1.7}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d232c;border:1px solid var(--line);color:var(--txt);padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>539<span class="accent">·</span>量化追蹤台</h1>
+      <span class="badge-src" id="srcBadge">資料載入中…</span>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kpiDraws">0</div><div class="l">已記錄期數</div></div>
+      <div class="kpi"><div class="v warn" id="kpiAvg">—</div><div class="l">我的推薦平均命中/期</div></div>
+      <div class="kpi"><div class="v" id="kpiOne">—</div><div class="l">至少中1碼比率</div></div>
+    </div>
+  </header>
+
+  <div class="grid cols-rec" style="margin-bottom:14px">
+    <div class="card">
+      <h2><span class="dot"></span>隔日推薦 · 下一期</h2>
+      <div class="rec-balls" id="recBalls">
+        <div class="ball-big"><span class="n">—</span><span class="lab">待產生</span></div>
+        <div class="ball-big"><span class="n">—</span><span class="lab">待產生</span></div>
+        <div class="ball-big"><span class="n">—</span><span class="lab">待產生</span></div>
+      </div>
+      <div class="controls">
+        <select id="method">
+          <option value="hot">熱號 · 近期最常開</option>
+          <option value="cold">冷號回補 · 遺漏最久</option>
+          <option value="balanced">均衡 · 高頻且遺漏</option>
+          <option value="random">隨機基準 · 對照組</option>
+        </select>
+        <select id="window">
+          <option value="10">近 10 期</option>
+          <option value="20" selected>近 20 期</option>
+          <option value="30">近 30 期</option>
+        </select>
+        <button class="primary" id="genBtn">產生推薦</button>
+      </div>
+      <div class="sub" id="recMeta" style="margin-top:12px">手動產生會記在本機；系統每天也會自動替四法各記一組（見下方雲端日誌）。</div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>理論基準</h2>
+      <div class="base-row"><span class="k">每期期望命中（純隨機 3 選）</span><span class="val">0.385</span></div>
+      <div class="base-row"><span class="k">至少中 1 碼機率</span><span class="val">34.5%</span></div>
+      <div class="base-row"><span class="k">我的實際 平均命中/期</span><span class="val" id="bAvg">—</span></div>
+      <div class="base-row"><span class="k">我的實際 至少中1碼</span><span class="val" id="bOne">—</span></div>
+      <div class="sub" id="verdict" style="margin-top:12px">累積足夠樣本後，這裡會告訴你是否真的勝過亂猜。</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="matrix-head">
+      <h2 style="margin:0"><span class="dot"></span>號碼熱力矩陣 · 01–39</h2>
+      <div class="seg" id="modeSeg">
+        <button data-mode="gap" class="act">遺漏熱度</button>
+        <button data-mode="freq">頻率熱度</button>
+      </div>
+    </div>
+    <div class="matrix" id="matrix"></div>
+    <div class="legend"><span id="legLo">近期出現</span><span class="bar"></span><span id="legHi">久未出現</span><span style="margin-left:auto">每格：遺N＝距上次 · 近M＝視窗內次數 · 滑鼠移上看歷史最大遺漏</span></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-bottom:14px">
+    <div class="card">
+      <h2><span class="dot"></span>方法回測排行 · walk-forward</h2>
+      <div class="lbhdr"><span class="m">方法</span><span class="st">平均命中</span><span class="st">至少1碼</span></div>
+      <div id="lbList"></div>
+      <div class="sub" id="lbMeta" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>型態統計</h2>
+      <div class="blk-title">單雙分布（一期內奇數個數）</div>
+      <div id="oddBars"></div>
+      <div class="blk-title">連號分布（一期內相鄰對數）</div>
+      <div id="consecBars"></div>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h2><span class="dot"></span>手動補登開獎</h2>
+      <div class="inrow">
+        <input type="date" id="inDate">
+        <div class="nums">
+          <input class="numbox num" id="n0" inputmode="numeric" placeholder="—">
+          <input class="numbox num" id="n1" inputmode="numeric" placeholder="—">
+          <input class="numbox num" id="n2" inputmode="numeric" placeholder="—">
+          <input class="numbox num" id="n3" inputmode="numeric" placeholder="—">
+          <input class="numbox num" id="n4" inputmode="numeric" placeholder="—">
+        </div>
+        <button class="primary" id="addBtn">新增</button>
+      </div>
+      <div class="hint">自動抓取通常已涵蓋；此處供補登或修正。手動資料存在本機瀏覽器。</div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>近期開獎</h2>
+      <div class="list" id="drawList"></div>
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:14px">
+    <div class="card">
+      <h2><span class="dot"></span>我的推薦紀錄（本機）</h2>
+      <div class="list" id="recList"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>雲端每日推薦 · 累積</h2>
+      <div class="lbhdr"><span class="m">方法</span><span class="st">平均命中</span><span class="st">期數</span></div>
+      <div id="cloudSummary"></div>
+      <div class="blk-title">最近自動推薦</div>
+      <div class="list" id="cloudList" style="max-height:220px"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    539 是公平的獨立隨機抽獎，歷史號碼在數學上對未來沒有預測力，長期期望值為負。<br>
+    本工具用於系統化記錄與驗證，請當研究與娛樂，別當作穩定獲利方法。<br>
+    <button class="ghost danger" id="resetBtn" style="margin-top:10px;font-size:11px">清除本機紀錄（推薦＋手動補登）</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const RANGE=39, PICK=5;
+  const METHODS=['hot','cold','balanced','random'];
+  const METHOD_LABEL={hot:'熱號',cold:'冷號回補',balanced:'均衡',random:'隨機基準'};
+  const EXP=15/39;            // 0.3846 理論期望命中
+  const LS={
+    get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},
+    set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+    del(k){try{localStorage.removeItem(k);}catch(e){}}
+  };
+  const state={draws:[],recs:[],liveLog:[],mode:'gap',updated:null,window:20};
+
+  // ---------- 引擎（與 build_data.py 對齊）----------
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+  function statsOn(ns,window){
+    const total=ns.length,rs=window?ns.slice(Math.max(0,total-window)):ns,arr=[];
+    for(let num=1;num<=RANGE;num++){
+      let count=0,recent=0,last=-1;
+      for(let d=0;d<total;d++){if(ns[d].includes(num)){count++;last=d;}}
+      for(const row of rs){if(row.includes(num))recent++;}
+      const gap=last===-1?total:total-1-last;
+      arr.push({num,count,recent,gap});
+    }
+    return {arr,total};
+  }
+  function recommendCore(ns,window,method,seed){
+    const {arr,total}=statsOn(ns,window);
+    if(total===0&&method!=='random')return null;
+    if(method==='hot')return arr.slice().sort((a,b)=>b.recent-a.recent||b.count-a.count||a.num-b.num).slice(0,3).map(x=>x.num).sort((a,b)=>a-b);
+    if(method==='cold')return arr.slice().sort((a,b)=>b.gap-a.gap||a.num-b.num).slice(0,3).map(x=>x.num).sort((a,b)=>a-b);
+    if(method==='balanced'){
+      const cs=arr.map(x=>x.count),gs=arr.map(x=>x.gap);
+      const clo=Math.min(...cs),chi=Math.max(...cs),glo=Math.min(...gs),ghi=Math.max(...gs);
+      const sc=x=>((chi>clo?(x.count-clo)/(chi-clo):0)+(ghi>glo?(x.gap-glo)/(ghi-glo):0));
+      return arr.slice().sort((a,b)=>sc(b)-sc(a)||a.num-b.num).slice(0,3).map(x=>x.num).sort((a,b)=>a-b);
+    }
+    const rand=mulberry32(seed>>>0),pool=[];for(let i=1;i<=RANGE;i++)pool.push(i);
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    return pool.slice(0,3).sort((a,b)=>a-b);
+  }
+  function backtest(ns,window,minHist){
+    const res={};METHODS.forEach(m=>res[m]={n:0,hits:0,one:0});
+    for(let i=minHist;i<ns.length;i++){
+      const hist=ns.slice(0,i),actual=new Set(ns[i]);
+      METHODS.forEach(m=>{const picks=recommendCore(hist,window,m,i)||[];let h=0;picks.forEach(p=>{if(actual.has(p))h++;});res[m].n++;res[m].hits+=h;if(h>=1)res[m].one++;});
+    }
+    return res;
+  }
+  function maxGaps(ns){
+    const total=ns.length,out={};
+    for(let num=1;num<=RANGE;num++){
+      let prev=-1,mg=0;
+      for(let d=0;d<total;d++){if(ns[d].includes(num)){if(d-prev-1>mg)mg=d-prev-1;prev=d;}}
+      if(prev===-1)mg=total;else if(total-1-prev>mg)mg=total-1-prev;
+      out[num]=mg;
+    }
+    return out;
+  }
+  function patternStats(ns){
+    const odd=[0,0,0,0,0,0],consec=[0,0,0,0,0];
+    for(const r0 of ns){const row=[...r0].sort((a,b)=>a-b);
+      let o=0;row.forEach(x=>{if(x%2===1)o++;});odd[o]++;
+      let p=0;for(let i=0;i<row.length-1;i++)if(row[i+1]-row[i]===1)p++;consec[Math.min(p,4)]++;
+    }
+    return {total:ns.length,odd,consec};
+  }
+
+  // ---------- 載入 ----------
+  async function load(){
+    let auto=[];
+    try{
+      const r=await fetch('./data.json?_='+Date.now());
+      if(r.ok){const j=await r.json();auto=(j.draws||[]).map(d=>({date:d.date,n:d.n,src:'auto'}));state.updated=j.updated;state.liveLog=j.live_log||[];if(j.window)state.window=j.window;}
+    }catch(e){}
+    const manual=(LS.get('manual_draws_539')||[]).map(d=>({date:d.date,n:d.n,src:'manual'}));
+    const map=new Map();
+    for(const d of manual)map.set(d.date,d);
+    for(const d of auto)map.set(d.date,d);
+    state.draws=[...map.values()];
+    state.recs=LS.get('recs_539')||[];
+    sortDraws();
+    const b=document.getElementById('srcBadge');
+    if(state.updated){b.innerHTML=`自動更新 <b>${auto.length}</b> 期 · ${state.updated.replace('T',' ').slice(0,16)}`;}
+    else b.textContent='尚無 data.json，使用手動資料';
+  }
+  function saveManual(){LS.set('manual_draws_539',state.draws.filter(d=>d.src==='manual').map(d=>({date:d.date,n:d.n})));}
+  function saveRecs(){LS.set('recs_539',state.recs);}
+  function sortDraws(){state.draws.sort((a,b)=>(a.date<b.date?-1:a.date>b.date?1:0));}
+
+  // 本機推薦評分
+  function gradingDrawFor(rec){let best=null;for(const d of state.draws){if(rec.baseDate===null||d.date>rec.baseDate){if(!best||d.date<best.date)best=d;}}return best;}
+  function regrade(){let ch=false;for(const rec of state.recs){const gd=gradingDrawFor(rec);
+    if(gd){const hits=rec.picks.filter(p=>gd.n.includes(p));if(rec.hits!==hits.length||rec.gradeDate!==gd.date){rec.hits=hits.length;rec.hitNums=hits;rec.gradeDate=gd.date;ch=true;}}
+    else if(rec.hits!==null){rec.hits=null;rec.hitNums=[];rec.gradeDate=null;ch=true;}}
+    if(ch)saveRecs();}
+
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function heat(t){t=Math.max(0,Math.min(1,t));let r,g,b;if(t<0.5){const u=t/0.5;r=lerp(47,57,u);g=lerp(93,65,u);b=lerp(122,79,u);}else{const u=(t-0.5)/0.5;r=lerp(57,200,u);g=lerp(65,133,u);b=lerp(79,44,u);}return `rgb(${r|0},${g|0},${b|0})`;}
+  function recPicksSet(){const p=state.recs.filter(r=>r.hits===null);return p.length?new Set(p[p.length-1].picks):new Set();}
+
+  // ---------- 渲染 ----------
+  function render(){
+    regrade();
+    const win=+document.getElementById('window').value;
+    const ns=state.draws.map(d=>d.n);
+    const {arr,total}=statsOn(ns,win);
+    const recSet=recPicksSet();
+    const mg=maxGaps(ns);
+
+    document.getElementById('kpiDraws').textContent=total;
+    const graded=state.recs.filter(r=>r.hits!==null);
+    if(graded.length){
+      const th=graded.reduce((s,r)=>s+r.hits,0),avg=th/graded.length,one=graded.filter(r=>r.hits>=1).length/graded.length;
+      document.getElementById('kpiAvg').textContent=avg.toFixed(3);
+      document.getElementById('kpiOne').textContent=(one*100).toFixed(0)+'%';
+      document.getElementById('bAvg').textContent=avg.toFixed(3)+`（${graded.length} 注）`;
+      document.getElementById('bOne').textContent=(one*100).toFixed(1)+'%';
+      const dAvg=avg-EXP;const cls=dAvg>0.02?'delta-up':dAvg<-0.02?'delta-down':'delta-flat';
+      let msg;
+      if(graded.length<30)msg=`樣本僅 ${graded.length} 注，還太少；至少累積 30–50 注再看結論。`;
+      else if(dAvg>0.03)msg=`目前平均命中比隨機高 <b>${dAvg.toFixed(3)}</b> 碼/期。樣本仍可能是運氣，繼續觀察。`;
+      else if(dAvg<-0.03)msg=`目前比隨機<b>低</b> ${(-dAvg).toFixed(3)} 碼/期，符合「無法預測」的預期。`;
+      else msg=`與隨機基準幾乎相同（差 ${dAvg>=0?'+':''}${dAvg.toFixed(3)}）——這正是公平抽獎應有的結果。`;
+      const v=document.getElementById('verdict');v.innerHTML=msg;v.className='sub '+cls;
+    }else{['kpiAvg','kpiOne'].forEach(id=>document.getElementById(id).textContent='—');['bAvg','bOne'].forEach(id=>document.getElementById(id).textContent='—');}
+
+    // matrix
+    const mx=document.getElementById('matrix');
+    const gMax=Math.max(1,...arr.map(a=>a.gap)),rMax=Math.max(1,...arr.map(a=>a.recent));
+    mx.innerHTML='';
+    for(const a of arr){
+      const t=state.mode==='gap'?(a.gap/gMax):(a.recent/rMax);
+      const cell=document.createElement('div');cell.className='cell'+(recSet.has(a.num)?' rec':'');
+      const bg=total?heat(t):'var(--panel-2)';
+      cell.style.borderColor=total?bg:'var(--line-soft)';
+      cell.style.background=total?`linear-gradient(180deg, ${bg}22, ${bg}10)`:'var(--panel-2)';
+      cell.title=`號碼 ${a.num}｜出現 ${a.count} 次｜目前遺漏 ${a.gap}｜歷史最大遺漏 ${mg[a.num]}`;
+      cell.innerHTML=(recSet.has(a.num)?'<span class="rec-tag">REC</span>':'')+
+        `<div class="cn" style="${total?('color:'+bg):''}">${String(a.num).padStart(2,'0')}</div>`+
+        `<div class="cs">遺${a.gap} · 近${a.recent}</div>`;
+      mx.appendChild(cell);
+    }
+    document.getElementById('legLo').textContent=state.mode==='gap'?'近期出現':'視窗內少出現';
+    document.getElementById('legHi').textContent=state.mode==='gap'?'久未出現':'視窗內常出現';
+
+    // leaderboard（回測）
+    renderLeaderboard(ns,win);
+    // 型態統計
+    renderPatterns(ns);
+    // 開獎清單
+    renderDraws(total);
+    // 本機推薦
+    renderRecs();
+    // 雲端日誌
+    renderCloud();
+  }
+
+  function renderLeaderboard(ns,win){
+    const el=document.getElementById('lbList'),meta=document.getElementById('lbMeta');
+    const minHist=Math.max(win,20);
+    if(ns.length<minHist+5){el.innerHTML='';meta.textContent=`資料需 ≥ ${minHist+5} 期才能回測，目前 ${ns.length} 期。`;return;}
+    const bt=backtest(ns,win,minHist);
+    const rows=METHODS.map(m=>({m,avg:bt[m].hits/bt[m].n,one:bt[m].one/bt[m].n,n:bt[m].n})).sort((a,b)=>b.avg-a.avg);
+    el.innerHTML='';
+    rows.forEach((r,i)=>{
+      const d=document.createElement('div');d.className='lbrow'+(i===0?' best':'');
+      d.innerHTML=`<span class="m">${METHOD_LABEL[r.m]}</span><span class="st${i===0?' hi':''}">${r.avg.toFixed(3)}</span><span class="st">${(r.one*100).toFixed(0)}%</span>`;
+      el.appendChild(d);
+    });
+    const th=document.createElement('div');th.className='lbrow theory';
+    th.innerHTML=`<span class="m">理論隨機</span><span class="st">${EXP.toFixed(3)}</span><span class="st">34.5%</span>`;
+    el.appendChild(th);
+    const spread=rows[0].avg-rows[rows.length-1].avg;
+    meta.innerHTML=`回測 ${rows[0].n} 期。最佳與最差差距僅 <b>${spread.toFixed(3)}</b> 碼/期——四法（含隨機）幾乎並排，正是「無法預測」的體現。`;
+  }
+
+  function bars(container,labels,counts,total){
+    const el=document.getElementById(container);el.innerHTML='';
+    const max=Math.max(1,...counts);
+    labels.forEach((lab,i)=>{
+      const pct=total?counts[i]/total*100:0;
+      const row=document.createElement('div');row.className='barrow';
+      row.innerHTML=`<span class="lab">${lab}</span><span class="track"><span class="fill" style="width:${counts[i]/max*100}%"></span></span><span class="val">${counts[i]}（${pct.toFixed(0)}%）</span>`;
+      el.appendChild(row);
+    });
+  }
+  function renderPatterns(ns){
+    if(!ns.length){['oddBars','consecBars'].forEach(id=>document.getElementById(id).innerHTML='<div class="sub">尚無資料</div>');return;}
+    const ps=patternStats(ns);
+    bars('oddBars',['0奇5偶','1奇4偶','2奇3偶','3奇2偶','4奇1偶','5奇0偶'],ps.odd,ps.total);
+    bars('consecBars',['無連號','1組連號','2組','3組','4組'],ps.consec,ps.total);
+  }
+
+  function renderDraws(total){
+    const dl=document.getElementById('drawList');
+    if(!total){dl.innerHTML='<div class="empty">尚無開獎資料。<br>等 GitHub Action 產生 data.json，或在左側手動補登。</div>';return;}
+    dl.innerHTML='';
+    [...state.draws].reverse().slice(0,80).forEach(d=>{
+      const idx=state.draws.indexOf(d);
+      const row=document.createElement('div');row.className='drow';
+      row.innerHTML=`<span class="date">${d.date}</span>`+
+        `<span class="balls">${[...d.n].sort((a,b)=>a-b).map(n=>`<span class="mini">${String(n).padStart(2,'0')}</span>`).join('')}</span>`+
+        (d.src==='manual'?`<span class="tagm">手動</span><span class="x" data-del="${idx}">×</span>`:`<span class="tagm">自動</span>`);
+      dl.appendChild(row);
+    });
+  }
+
+  function renderRecs(){
+    const rl=document.getElementById('recList');
+    if(!state.recs.length){rl.innerHTML='<div class="empty">還沒有推薦紀錄。<br>選方法按「產生推薦」，下一期更新後自動評分。</div>';return;}
+    rl.innerHTML='';
+    [...state.recs].reverse().forEach(rec=>{
+      const row=document.createElement('div');row.className='rrow';
+      let badge;
+      if(rec.hits===null)badge='<span class="badge pend">待開獎</span>';
+      else{const cls=rec.hits>=2?'h2':rec.hits===1?'h1':'h0';badge=`<span class="badge ${cls}">中 ${rec.hits} 碼</span>`;}
+      const hs=new Set(rec.hitNums||[]);
+      row.innerHTML=`<span class="meth">${METHOD_LABEL[rec.method]||rec.method}</span>`+
+        `<span class="picks">${rec.picks.map(p=>`<span class="mini${hs.has(p)?' hit':''}">${String(p).padStart(2,'0')}</span>`).join('')}</span>`+badge;
+      rl.appendChild(row);
+    });
+  }
+
+  function renderCloud(){
+    const sum=document.getElementById('cloudSummary'),list=document.getElementById('cloudList');
+    const log=state.liveLog||[];
+    if(!log.length){sum.innerHTML='';list.innerHTML='<div class="empty">尚無雲端紀錄。<br>GitHub Action 每天跑後會自動累積（每法每期一組）。</div>';return;}
+    const agg={};METHODS.forEach(m=>agg[m]={n:0,hits:0});
+    log.forEach(e=>{if(e.hits!==null&&agg[e.method]){agg[e.method].n++;agg[e.method].hits+=e.hits;}});
+    sum.innerHTML='';
+    METHODS.map(m=>({m,n:agg[m].n,avg:agg[m].n?agg[m].hits/agg[m].n:null})).sort((a,b)=>(b.avg||-1)-(a.avg||-1)).forEach(r=>{
+      const d=document.createElement('div');d.className='lbrow';
+      d.innerHTML=`<span class="m">${METHOD_LABEL[r.m]}</span><span class="st">${r.avg===null?'—':r.avg.toFixed(3)}</span><span class="st">${r.n}</span>`;
+      sum.appendChild(d);
+    });
+    list.innerHTML='';
+    [...log].reverse().slice(0,24).forEach(e=>{
+      const row=document.createElement('div');row.className='rrow';
+      let badge;
+      if(e.hits===null)badge='<span class="badge pend">待開獎</span>';
+      else{const cls=e.hits>=2?'h2':e.hits===1?'h1':'h0';badge=`<span class="badge ${cls}">中 ${e.hits}</span>`;}
+      row.innerHTML=`<span class="meth" style="width:104px">${e.base_date.slice(5)} ${METHOD_LABEL[e.method]}</span>`+
+        `<span class="picks">${e.picks.map(p=>`<span class="mini">${String(p).padStart(2,'0')}</span>`).join('')}</span>`+badge;
+      list.appendChild(row);
+    });
+  }
+
+  // ---------- 互動 ----------
+  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
+  function todayStr(){const d=new Date(),o=d.getTimezoneOffset();return new Date(d-o*60000).toISOString().slice(0,10);}
+  function parseNums(tk){const s=new Set();for(const t of tk){const v=parseInt(t,10);if(v>=1&&v<=RANGE)s.add(v);}return [...s];}
+
+  function bind(){
+    document.getElementById('inDate').value=todayStr();
+    document.getElementById('genBtn').onclick=()=>{
+      const method=document.getElementById('method').value,win=+document.getElementById('window').value;
+      const picks=recommendCore(state.draws.map(d=>d.n),win,method,Math.floor(Math.random()*1e9));
+      if(!picks){toast('尚無開獎資料');return;}
+      document.querySelectorAll('#recBalls .ball-big').forEach((b,i)=>{b.classList.add('on');b.querySelector('.n').textContent=String(picks[i]).padStart(2,'0');b.querySelector('.lab').textContent=METHOD_LABEL[method];});
+      const baseDate=state.draws.length?state.draws[state.draws.length-1].date:null;
+      state.recs.push({id:Date.now(),method,picks,baseDate,hits:null,hitNums:[],gradeDate:null});
+      saveRecs();
+      document.getElementById('recMeta').innerHTML=`已記錄（${METHOD_LABEL[method]}）。基準期：<b>${baseDate||'—'}</b>，下一期更新後自動評分。`;
+      render();
+    };
+    function addSingle(){
+      const date=document.getElementById('inDate').value||todayStr();
+      const nums=parseNums([0,1,2,3,4].map(i=>document.getElementById('n'+i).value));
+      if(nums.length!==PICK){toast('需要 5 個不重複號碼（1–39）');return;}
+      const i=state.draws.findIndex(d=>d.date===date);
+      if(i>=0)state.draws[i]={date,n:nums,src:'manual'};else state.draws.push({date,n:nums,src:'manual'});
+      sortDraws();saveManual();
+      [0,1,2,3,4].forEach(i=>document.getElementById('n'+i).value='');document.getElementById('n0').focus();
+      toast('已補登 '+date);render();
+    }
+    document.getElementById('addBtn').onclick=addSingle;
+    document.querySelectorAll('.numbox').forEach((el,idx,list)=>el.addEventListener('keydown',e=>{if(e.key==='Enter'){if(idx<list.length-1)list[idx+1].focus();else addSingle();}}));
+    document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.mode=b.dataset.mode;document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('act',x===b));render();});
+    document.getElementById('window').onchange=render;
+    document.getElementById('drawList').addEventListener('click',e=>{const x=e.target.closest('[data-del]');if(!x)return;state.draws.splice(+x.dataset.del,1);saveManual();render();});
+    document.getElementById('resetBtn').onclick=()=>{if(!confirm('清除本機的推薦紀錄與手動補登？（雲端與自動抓取不受影響）'))return;state.recs=[];state.draws=state.draws.filter(d=>d.src!=='manual');LS.del('recs_539');LS.del('manual_draws_539');render();toast('已清除');};
+  }
+
+  (async function(){await load();bind();
+    const w=document.getElementById('window');if(state.window&&[10,20,30].includes(state.window))w.value=String(state.window);
+    render();})();
+})();
+</script>
+</html>
