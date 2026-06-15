@@ -13,7 +13,7 @@ from TaiwanLottery import TaiwanLotteryCrawler
 
 MONTHS_BACK = 12
 WINDOW = 20                       # 近期視窗，需與 index.html 一致
-METHODS = ["hot", "cold", "balanced", "random"]
+METHODS = ["hot", "cold", "balanced", "markov", "random"]
 TZ = timezone(timedelta(hours=8))
 DATA_FILE = "data.json"
 
@@ -111,7 +111,34 @@ def compute_stats(history, window):
     return arr, total
 
 
+def markov_recommend(history):
+    """一階轉移機率：用 P(y下期|x本期) 加總本期 5 號的後續分布，取最高 3 碼。"""
+    total = len(history)
+    if total < 2:
+        return []
+    M = [[0] * 40 for _ in range(40)]
+    A = [0] * 40
+    for t in range(total - 1):
+        cur, nxt = history[t], history[t + 1]
+        for x in cur:
+            A[x] += 1
+            for y in nxt:
+                M[x][y] += 1
+    cond = history[total - 1]            # 以最新一期為條件
+    score = [0.0] * 40
+    for y in range(1, 40):
+        s = 0.0
+        for x in cond:
+            if A[x] > 0:
+                s += M[x][y] / A[x]
+        score[y] = s
+    order = sorted(range(1, 40), key=lambda y: (-score[y], y))
+    return sorted(order[:3])
+
+
 def recommend(history, window, method, seed=0):
+    if method == "markov":
+        return markov_recommend(history)
     arr, total = compute_stats(history, window)
     if total == 0 and method != "random":
         return []
