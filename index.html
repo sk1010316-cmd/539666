@@ -145,6 +145,7 @@
           <option value="hot">熱號 · 近期最常開</option>
           <option value="cold">冷號回補 · 遺漏最久</option>
           <option value="balanced">均衡 · 高頻且遺漏</option>
+          <option value="markov">轉移機率 · 本期號碼的後續分布</option>
           <option value="random">隨機基準 · 對照組</option>
         </select>
         <select id="window">
@@ -242,8 +243,8 @@
 (function(){
   "use strict";
   const RANGE=39, PICK=5;
-  const METHODS=['hot','cold','balanced','random'];
-  const METHOD_LABEL={hot:'熱號',cold:'冷號回補',balanced:'均衡',random:'隨機基準'};
+  const METHODS=['hot','cold','balanced','markov','random'];
+  const METHOD_LABEL={hot:'熱號',cold:'冷號回補',balanced:'均衡',markov:'轉移機率',random:'隨機基準'};
   const EXP=15/39;            // 0.3846 理論期望命中
   const LS={
     get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},
@@ -265,7 +266,24 @@
     }
     return {arr,total};
   }
+  function markovRecommend(ns){
+    const total=ns.length;
+    if(total<2)return null;
+    const M=Array.from({length:40},()=>new Array(40).fill(0));
+    const A=new Array(40).fill(0);
+    for(let t=0;t<total-1;t++){
+      const cur=ns[t],nxt=ns[t+1];
+      for(const x of cur){A[x]++;for(const y of nxt)M[x][y]++;}
+    }
+    const cond=ns[total-1];
+    const score=new Array(40).fill(0);
+    for(let y=1;y<=RANGE;y++){let s=0;for(const x of cond){if(A[x]>0)s+=M[x][y]/A[x];}score[y]=s;}
+    const order=[];for(let y=1;y<=RANGE;y++)order.push(y);
+    order.sort((a,b)=>score[b]-score[a]||a-b);
+    return order.slice(0,3).sort((a,b)=>a-b);
+  }
   function recommendCore(ns,window,method,seed){
+    if(method==='markov')return markovRecommend(ns);
     const {arr,total}=statsOn(ns,window);
     if(total===0&&method!=='random')return null;
     if(method==='hot')return arr.slice().sort((a,b)=>b.recent-a.recent||b.count-a.count||a.num-b.num).slice(0,3).map(x=>x.num).sort((a,b)=>a-b);
