@@ -21,7 +21,7 @@
 ## 資料來源與更新
 
 - 來源：台灣彩券官網，透過 [`taiwanlottery`](https://pypi.org/project/taiwanlottery/) 套件（`daily_cash`）抓取。
-- 更新：GitHub Actions 每天台北時間 **21:00**（開獎約 20:30 後）自動執行 `build_data.py`，抓最近 12 個月開獎，寫入 `data.json` 並 commit。
+- 更新：GitHub Actions 每天台北時間 **21:00**（開獎約 20:30 後）自動執行 `build_data.py`，抓最近 36 個月開獎，寫入 `data.json` 並 commit。
 - 不需手動操作；隔天打開網站即為最新。
 
 也可在 **Actions → build-data → Run workflow** 手動觸發一次。
