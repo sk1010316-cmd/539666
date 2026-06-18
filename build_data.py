@@ -11,7 +11,7 @@ import random
 from datetime import datetime, timezone, timedelta
 from TaiwanLottery import TaiwanLotteryCrawler
 
-MONTHS_BACK = 12
+MONTHS_BACK = 36
 WINDOW = 20                       # 近期視窗，需與 index.html 一致
 METHODS = ["hot", "cold", "balanced", "markov", "random"]
 TZ = timezone(timedelta(hours=8))
