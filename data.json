@@ -1,7 +1,7 @@
 {
   "game": "今彩539",
-  "updated": "2026-11-10T06:55:06+08:00",
-  "count": 927,
+  "updated": "2026-11-11T04:20:48+08:00",
+  "count": 928,
   "window": 20,
   "draws": [
     {
@@ -10200,6 +10200,17 @@
         30,
         33
       ]
+    },
+    {
+      "date": "2026-11-10",
+      "period": "115000272",
+      "n": [
+        1,
+        19,
+        24,
+        29,
+        34
+      ]
     }
   ],
   "live_log": [
@@ -17185,11 +17196,66 @@
         28,
         35
       ],
+      "hits": 0,
+      "grade_date": "2026-11-10"
+    },
+    {
+      "base_date": "2026-11-09",
+      "method": "cold",
+      "picks": [
+        4,
+        16,
+        25
+      ],
+      "hits": 0,
+      "grade_date": "2026-11-10"
+    },
+    {
+      "base_date": "2026-11-09",
+      "method": "balanced",
+      "picks": [
+        11,
+        12,
+        27
+      ],
+      "hits": 0,
+      "grade_date": "2026-11-10"
+    },
+    {
+      "base_date": "2026-11-09",
+      "method": "markov",
+      "picks": [
+        7,
+        13,
+        37
+      ],
+      "hits": 0,
+      "grade_date": "2026-11-10"
+    },
+    {
+      "base_date": "2026-11-09",
+      "method": "random",
+      "picks": [
+        5,
+        24,
+        38
+      ],
+      "hits": 1,
+      "grade_date": "2026-11-10"
+    },
+    {
+      "base_date": "2026-11-10",
+      "method": "hot",
+      "picks": [
+        14,
+        28,
+        35
+      ],
       "hits": null,
       "grade_date": null
     },
     {
-      "base_date": "2026-11-09",
+      "base_date": "2026-11-10",
       "method": "cold",
       "picks": [
         4,
@@ -17200,7 +17266,7 @@
       "grade_date": null
     },
     {
-      "base_date": "2026-11-09",
+      "base_date": "2026-11-10",
       "method": "balanced",
       "picks": [
         11,
@@ -17211,23 +17277,23 @@
       "grade_date": null
     },
     {
-      "base_date": "2026-11-09",
+      "base_date": "2026-11-10",
       "method": "markov",
       "picks": [
-        7,
-        13,
-        37
+        4,
+        11,
+        27
       ],
       "hits": null,
       "grade_date": null
     },
     {
-      "base_date": "2026-11-09",
+      "base_date": "2026-11-10",
       "method": "random",
       "picks": [
-        5,
-        24,
-        38
+        2,
+        13,
+        28
       ],
       "hits": null,
       "grade_date": null
